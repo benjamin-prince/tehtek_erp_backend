@@ -1,0 +1,3 @@
+api.tehtek.com {
+    reverse_proxy backend:8000
+}

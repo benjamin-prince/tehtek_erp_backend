@@ -1,0 +1,29 @@
+services:
+  backend:
+    build:
+      context: ../../backend
+    image: tehtek_backend
+    container_name: tehtek_backend
+    restart: unless-stopped
+    expose:
+      - "8000"
+    env_file:
+      - ../../.env
+
+  caddy:
+    image: caddy:latest
+    container_name: tehtek_caddy
+    restart: unless-stopped
+    depends_on:
+      - backend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ../caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+
+volumes:
+  caddy_data:
+  caddy_config:
