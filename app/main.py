@@ -9,8 +9,8 @@ from fastapi import FastAPI
 from sqlalchemy import text
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.config import settings
-from app.database import Base, engine, SessionLocal
+from app.core.config import settings
+from app.core.database import Base, engine, SessionLocal
 from app.modules.users.models import User, UserStatus, UserType
 from app.modules.users.security import hash_password
 from app.modules.users.router import router as users_router
