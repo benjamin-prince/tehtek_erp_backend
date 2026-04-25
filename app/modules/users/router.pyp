@@ -9,7 +9,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, Query, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.core.database import get_db
+from ..core.database import get_db
 from .controller import AuthController, UserController, ReferralController
 from .middleware import (
     get_current_active_user,

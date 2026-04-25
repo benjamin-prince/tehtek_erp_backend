@@ -19,107 +19,104 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
-# ─────────────────────────────────────────────
-# DEFAULT ADMIN SEEDER
-# ─────────────────────────────────────────────
-
 def create_default_admin() -> None:
     """
-    Creates the default superadmin on first boot using
-    credentials defined in .env — never hardcoded.
-    Safe to call multiple times — skips if already exists.
+    Create default super admin only once.
     """
     db = SessionLocal()
+
     try:
-        existing = db.query(User).filter(User.email == settings.ADMIN_EMAIL).first()
+        existing = db.query(User).filter(
+            User.email == settings.ADMIN_EMAIL
+        ).first()
+
         if existing:
-            logger.info("Default admin already exists — skipping seed.")
+            logger.info("Default admin already exists — skipping.")
             return
 
         admin = User(
-            email           = settings.ADMIN_EMAIL,
-            first_name      = settings.ADMIN_FIRST_NAME,
-            last_name       = settings.ADMIN_LAST_NAME,
-            hashed_password = hash_password(settings.ADMIN_PASSWORD),
-            user_type       = UserType.INTERNAL,
-            status          = UserStatus.ACTIVE,
-            is_superadmin   = True,
-            mfa_enabled     = False,
+            email=settings.ADMIN_EMAIL,
+            first_name=settings.ADMIN_FIRST_NAME,
+            last_name=settings.ADMIN_LAST_NAME,
+            hashed_password=hash_password(settings.ADMIN_PASSWORD),
+
+            user_type=UserType.INTERNAL,
+            status=UserStatus.ACTIVE,
+
+            is_superadmin=True,
+            mfa_enabled=False,
         )
+
         db.add(admin)
         db.commit()
+
         logger.info(f"Default admin created: {settings.ADMIN_EMAIL}")
 
     except SQLAlchemyError as e:
         db.rollback()
-        logger.error(f"Failed to create default admin: {e}")
+        logger.error(f"Failed creating admin: {e}")
         raise
 
     finally:
         db.close()
 
 
-# ─────────────────────────────────────────────
-# LIFESPAN
-# ─────────────────────────────────────────────
-
 @asynccontextmanager
 async def lifespan(app: FastAPI):
-    # ── Startup ──────────────────────────────
     logger.info(f"Starting {settings.APP_NAME}...")
+
     try:
         Base.metadata.create_all(bind=engine)
         logger.info("Database tables verified.")
+
         create_default_admin()
+
     except Exception as e:
         logger.critical(f"Startup failed: {e}")
         raise
 
-    yield  # app is running
+    yield
 
-    # ── Shutdown ─────────────────────────────
     logger.info(f"Shutting down {settings.APP_NAME}...")
     engine.dispose()
-    logger.info("Database connections closed.")
 
-
-# ─────────────────────────────────────────────
-# APP
-# ─────────────────────────────────────────────
 
 app = FastAPI(
-    title       = settings.APP_NAME,
-    version     = settings.APP_VERSION,
-    description = settings.APP_DESCRIPTION,
-    lifespan    = lifespan,
+    title=settings.APP_NAME,
+    version=settings.APP_VERSION,
+    description=settings.APP_DESCRIPTION,
+    lifespan=lifespan,
 )
 
 app.include_router(users_router, prefix="/api")
 
 
-# ─────────────────────────────────────────────
-# CORE ROUTES
-# ─────────────────────────────────────────────
-
 @app.get("/", tags=["System"])
 def root():
-    return {"message": f"{settings.APP_NAME} is running"}
+    return {
+        "message": f"{settings.APP_NAME} is running"
+    }
 
 
 @app.get("/health", tags=["System"])
 def health():
     try:
         with engine.connect() as conn:
-            db_time = conn.execute(text("SELECT NOW();")).scalar()
+            db_time = conn.execute(
+                text("SELECT NOW();")
+            ).scalar()
+
         return {
-            "status":   "ok",
+            "status": "ok",
             "database": "connected",
-            "db_time":  str(db_time),
+            "db_time": str(db_time),
         }
+
     except SQLAlchemyError as e:
         logger.error(f"Health check failed: {e}")
+
         return {
-            "status":   "error",
+            "status": "error",
             "database": "disconnected",
-            "detail":   str(e),
+            "detail": str(e),
         }

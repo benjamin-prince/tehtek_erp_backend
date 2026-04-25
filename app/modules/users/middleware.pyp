@@ -16,7 +16,7 @@ from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.core.database import get_db, settings
+from ..core.database import get_db, settings
 from .models import User, UserRole, Role, RolePermission, Permission, UserStatus
 
 

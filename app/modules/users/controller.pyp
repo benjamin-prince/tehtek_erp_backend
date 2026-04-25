@@ -32,7 +32,7 @@ from .schemas import (
     ReferralLeadCreate, ReferralLeadUpdate,
     CommissionApproveRequest, CommissionPayRequest,
 )
-from app.core.database import settings
+from ..core.database import settings
 
 
 # ─────────────────────────────────────────────
