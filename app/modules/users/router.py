@@ -61,43 +61,43 @@ def login(
 
 
 @auth_router.post("/refresh", response_model=TokenResponse, summary="Refresh token")
-async def refresh_token(
+def refresh_token(
     payload: RefreshRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    return await AuthController.refresh(db, payload.refresh_token)
+    return  AuthController.refresh(db, payload.refresh_token)
 
 
 @auth_router.post("/password-reset/request", status_code=200, summary="Request password reset")
-async def request_password_reset(
+def request_password_reset(
     payload: PasswordResetRequest,
     db: AsyncSession = Depends(get_db),
 ):
-    await AuthController.request_password_reset(db, payload.email)
+    AuthController.request_password_reset(db, payload.email)
     return {"message": "If the email is registered, a reset link has been sent."}
 
 
 @auth_router.post("/password-reset/confirm", status_code=200, summary="Confirm password reset")
-async def confirm_password_reset(
+def confirm_password_reset(
     payload: PasswordResetConfirm,
     db: AsyncSession = Depends(get_db),
 ):
-    await AuthController.confirm_password_reset(db, payload.token, payload.new_password)
+    AuthController.confirm_password_reset(db, payload.token, payload.new_password)
     return {"message": "Password successfully reset."}
 
 
 @auth_router.get("/me", response_model=UserResponse, summary="Get current user")
-async def get_me(current_user: User = Depends(get_current_active_user)):
+def get_me(current_user: User = Depends(get_current_active_user)):
     return current_user
 
 
 @auth_router.patch("/me/password", status_code=200, summary="Change own password")
-async def change_my_password(
+def change_my_password(
     payload: ChangePasswordRequest,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):
-    await UserController.change_password(db, current_user, payload)
+    UserController.change_password(db, current_user, payload)
     return {"message": "Password updated successfully."}
 
 
@@ -115,12 +115,12 @@ users_router = APIRouter(prefix="/users", tags=["Users"])
     summary="Create user",
     dependencies=[Depends(require_permission("users:write"))],
 )
-async def create_user(
+def create_user(
     payload: UserCreate,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):
-    user = await UserController.create_user(db, payload, current_user)
+    user =  UserController.create_user(db, payload, current_user)
     return user
 
 
@@ -130,7 +130,7 @@ async def create_user(
     summary="List users",
     dependencies=[Depends(require_permission("users:read"))],
 )
-async def list_users(
+def list_users(
     page:       int = Query(1, ge=1),
     size:       int = Query(20, ge=1, le=100),
     search:     Optional[str] = Query(None),
@@ -139,7 +139,7 @@ async def list_users(
     department: Optional[str] = Query(None),
     db: AsyncSession = Depends(get_db),
 ):
-    users, total = await UserController.list_users(
+    users, total =  UserController.list_users(
         db, page, size, search, user_type, status, department
     )
     return UserListResponse(total=total, page=page, size=size, items=users)
@@ -151,11 +151,11 @@ async def list_users(
     summary="Get user",
     dependencies=[Depends(require_self_or_permission("users:read"))],
 )
-async def get_user(
+def get_user(
     user_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
 ):
-    return await UserController.get_user(db, user_id)
+    return  UserController.get_user(db, user_id)
 
 
 @users_router.patch(
@@ -164,13 +164,13 @@ async def get_user(
     summary="Update user",
     dependencies=[Depends(require_self_or_permission("users:write"))],
 )
-async def update_user(
+def update_user(
     user_id: uuid.UUID,
     payload: UserUpdate,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):
-    return await UserController.update_user(db, user_id, payload, current_user)
+    return  UserController.update_user(db, user_id, payload, current_user)
 
 
 @users_router.delete(
@@ -179,12 +179,12 @@ async def update_user(
     summary="Delete user (soft)",
     dependencies=[Depends(require_permission("users:delete"))],
 )
-async def delete_user(
+def delete_user(
     user_id: uuid.UUID,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):
-    await UserController.soft_delete_user(db, user_id, current_user)
+     UserController.soft_delete_user(db, user_id, current_user)
 
 
 @users_router.put(
@@ -193,13 +193,13 @@ async def delete_user(
     summary="Assign roles to user",
     dependencies=[Depends(require_permission("users:manage_roles"))],
 )
-async def assign_roles(
+def assign_roles(
     user_id: uuid.UUID,
     payload: AssignRolesRequest,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):
-    return await UserController.assign_roles(db, user_id, payload, current_user)
+    return  UserController.assign_roles(db, user_id, payload, current_user)
 
 
 @users_router.get(
@@ -207,7 +207,7 @@ async def assign_roles(
     summary="View user audit log",
     dependencies=[Depends(require_permission("users:audit"))],
 )
-async def get_user_audit_log(
+def get_user_audit_log(
     user_id: uuid.UUID,
     page: int = Query(1, ge=1),
     size: int = Query(50, ge=1, le=200),
@@ -215,7 +215,7 @@ async def get_user_audit_log(
 ):
     from .models import UserAuditLog
     from sqlalchemy import select, func
-    count_res = await db.execute(
+    count_res =  db.execute(
         select(func.count()).where(UserAuditLog.user_id == user_id)
     )
     result = db.execute(
@@ -243,12 +243,12 @@ roles_router = APIRouter(prefix="/roles", tags=["Roles & Permissions"])
     summary="Create role",
     dependencies=[Depends(require_permission("roles:write"))],
 )
-async def create_role(
+def create_role(
     payload: RoleCreate,
     db: AsyncSession = Depends(get_db),
 ):
     from .models import Role, RolePermission, Permission
-    existing = await db.execute(select(Role).where(Role.slug == payload.slug))
+    existing =  db.execute(select(Role).where(Role.slug == payload.slug))
     if existing.scalar_one_or_none():
         raise HTTPException(status_code=409, detail="Role slug already exists.")
 
@@ -257,10 +257,10 @@ async def create_role(
         department=payload.department, description=payload.description,
     )
     db.add(role)
-    await db.flush()
+    db.flush()
 
     if payload.permission_ids:
-        perms = await db.execute(select(Permission).where(Permission.id.in_(payload.permission_ids)))
+        perms =  db.execute(select(Permission).where(Permission.id.in_(payload.permission_ids)))
         for p in perms.scalars().all():
             db.add(RolePermission(role_id=role.id, permission_id=p.id))
 
@@ -268,7 +268,7 @@ async def create_role(
 
 
 @roles_router.get("/", summary="List all roles", dependencies=[Depends(require_permission("roles:read"))])
-async def list_roles(db: AsyncSession = Depends(get_db)):
+def list_roles(db: AsyncSession = Depends(get_db)):
     result = db.execute(
         select(Role).options(
             selectinload(Role.permissions).selectinload(RolePermission.permission)
@@ -283,7 +283,7 @@ async def list_roles(db: AsyncSession = Depends(get_db)):
     summary="Delete role",
     dependencies=[Depends(require_superadmin())],
 )
-async def delete_role(role_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
+def delete_role(role_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     from .models import Role
     from fastapi import HTTPException
     result = db.execute(select(Role).where(Role.id == role_id))
@@ -292,7 +292,7 @@ async def delete_role(role_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Role not found.")
     if role.is_system:
         raise HTTPException(status_code=400, detail="Cannot delete a system role.")
-    await db.delete(role)
+    db.delete(role)
 
 
 # ═══════════════════════════════════════════════════
@@ -309,13 +309,13 @@ referral_router = APIRouter(prefix="/referrals", tags=["Referrals & Commissions"
     summary="Create referral agent profile for a user",
     dependencies=[Depends(require_permission("referrals:write"))],
 )
-async def create_referral_agent(
+def create_referral_agent(
     user_id: uuid.UUID,
     payload: ReferralAgentCreate,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):
-    return await ReferralController.create_agent(db, user_id, payload, current_user)
+    return  ReferralController.create_agent(db, user_id, payload, current_user)
 
 
 @referral_router.get(
@@ -323,13 +323,13 @@ async def create_referral_agent(
     summary="List all referral agents",
     dependencies=[Depends(require_permission("referrals:read"))],
 )
-async def list_referral_agents(
+def list_referral_agents(
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
 ):
     from sqlalchemy import func
-    count_res = await db.execute(select(func.count()).select_from(ReferralAgent))
+    count_res =  db.execute(select(func.count()).select_from(ReferralAgent))
     result = db.execute(
         select(ReferralAgent)
         .options(selectinload(ReferralAgent.user))
@@ -347,11 +347,11 @@ async def list_referral_agents(
     summary="Get commission summary for an agent",
     dependencies=[Depends(require_permission("referrals:read"))],
 )
-async def get_agent_summary(
+def get_agent_summary(
     agent_id: uuid.UUID,
     db: AsyncSession = Depends(get_db),
 ):
-    return await ReferralController.get_commission_summary(db, agent_id)
+    return  ReferralController.get_commission_summary(db, agent_id)
 
 
 # ─── Leads ───────────────────────────────────
@@ -363,7 +363,7 @@ async def get_agent_summary(
     summary="Submit a new referral lead",
     dependencies=[Depends(require_permission("referrals:write"))],
 )
-async def submit_lead(
+def submit_lead(
     agent_id: uuid.UUID,
     payload: ReferralLeadCreate,
     db: AsyncSession = Depends(get_db),
@@ -373,7 +373,7 @@ async def submit_lead(
     if not agent:
         from fastapi import HTTPException
         raise HTTPException(status_code=404, detail="Referral agent not found.")
-    return await ReferralController.submit_lead(db, agent, payload)
+    return  ReferralController.submit_lead(db, agent, payload)
 
 
 @referral_router.get(
@@ -382,7 +382,7 @@ async def submit_lead(
     summary="List leads for an agent",
     dependencies=[Depends(require_permission("referrals:read"))],
 )
-async def list_agent_leads(
+def list_agent_leads(
     agent_id: uuid.UUID,
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
@@ -390,7 +390,7 @@ async def list_agent_leads(
 ):
     from .models import ReferralLead
     from sqlalchemy import func
-    count_res = await db.execute(
+    count_res =  db.execute(
         select(func.count()).where(ReferralLead.agent_id == agent_id)
     )
     result = db.execute(
@@ -409,13 +409,13 @@ async def list_agent_leads(
     summary="Update lead status (sales team)",
     dependencies=[Depends(require_permission("referrals:manage"))],
 )
-async def update_lead(
+def update_lead(
     lead_id: uuid.UUID,
     payload: ReferralLeadUpdate,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):
-    return await ReferralController.update_lead(db, lead_id, payload, current_user)
+    return  ReferralController.update_lead(db, lead_id, payload, current_user)
 
 
 # ─── Commissions ─────────────────────────────
@@ -425,7 +425,7 @@ async def update_lead(
     summary="List all commissions",
     dependencies=[Depends(require_permission("commissions:read"))],
 )
-async def list_commissions(
+def list_commissions(
     page: int = Query(1, ge=1),
     size: int = Query(20, ge=1, le=100),
     agent_id: Optional[uuid.UUID] = Query(None),
@@ -436,7 +436,7 @@ async def list_commissions(
     query = select(Commission)
     if agent_id:
         query = query.where(Commission.agent_id == agent_id)
-    count_res = await db.execute(select(func.count()).select_from(query.subquery()))
+    count_res =  db.execute(select(func.count()).select_from(query.subquery()))
     result = db.execute(
         query.order_by(Commission.created_at.desc())
         .offset((page - 1) * size).limit(size)
@@ -450,13 +450,13 @@ async def list_commissions(
     summary="Approve a commission",
     dependencies=[Depends(require_permission("commissions:approve"))],
 )
-async def approve_commission(
+def approve_commission(
     commission_id: uuid.UUID,
     payload: CommissionApproveRequest,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):
-    return await ReferralController.approve_commission(db, commission_id, payload, current_user)
+    return  ReferralController.approve_commission(db, commission_id, payload, current_user)
 
 
 @referral_router.post(
@@ -465,13 +465,13 @@ async def approve_commission(
     summary="Mark commission as paid",
     dependencies=[Depends(require_permission("commissions:pay"))],
 )
-async def pay_commission(
+def pay_commission(
     commission_id: uuid.UUID,
     payload: CommissionPayRequest,
     current_user: User = Depends(get_current_active_user),
     db: AsyncSession = Depends(get_db),
 ):
-    return await ReferralController.mark_commission_paid(db, commission_id, payload, current_user)
+    return  ReferralController.mark_commission_paid(db, commission_id, payload, current_user)
 
 
 # ═══════════════════════════════════════════════════
