@@ -50,14 +50,14 @@ auth_router = APIRouter(prefix="/auth", tags=["Auth"])
 
 
 @auth_router.post("/login", response_model=TokenResponse, summary="Login")
-async def login(
+def login(
     request: Request,
     payload: LoginRequest,
     db: AsyncSession = Depends(get_db),
 ):
     """Authenticate with email + password. Returns JWT access & refresh tokens."""
     ip = request.client.host if request.client else None
-    return await AuthController.login(db, payload, ip)
+    return AuthController.login(db, payload, ip)
 
 
 @auth_router.post("/refresh", response_model=TokenResponse, summary="Refresh token")
@@ -218,7 +218,7 @@ async def get_user_audit_log(
     count_res = await db.execute(
         select(func.count()).where(UserAuditLog.user_id == user_id)
     )
-    result = await db.execute(
+    result = db.execute(
         select(UserAuditLog)
         .where(UserAuditLog.user_id == user_id)
         .order_by(UserAuditLog.created_at.desc())
@@ -269,7 +269,7 @@ async def create_role(
 
 @roles_router.get("/", summary="List all roles", dependencies=[Depends(require_permission("roles:read"))])
 async def list_roles(db: AsyncSession = Depends(get_db)):
-    result = await db.execute(
+    result = db.execute(
         select(Role).options(
             selectinload(Role.permissions).selectinload(RolePermission.permission)
         )
@@ -286,7 +286,7 @@ async def list_roles(db: AsyncSession = Depends(get_db)):
 async def delete_role(role_id: uuid.UUID, db: AsyncSession = Depends(get_db)):
     from .models import Role
     from fastapi import HTTPException
-    result = await db.execute(select(Role).where(Role.id == role_id))
+    result = db.execute(select(Role).where(Role.id == role_id))
     role = result.scalar_one_or_none()
     if not role:
         raise HTTPException(status_code=404, detail="Role not found.")
@@ -330,7 +330,7 @@ async def list_referral_agents(
 ):
     from sqlalchemy import func
     count_res = await db.execute(select(func.count()).select_from(ReferralAgent))
-    result = await db.execute(
+    result = db.execute(
         select(ReferralAgent)
         .options(selectinload(ReferralAgent.user))
         .offset((page - 1) * size)
@@ -368,7 +368,7 @@ async def submit_lead(
     payload: ReferralLeadCreate,
     db: AsyncSession = Depends(get_db),
 ):
-    result = await db.execute(select(ReferralAgent).where(ReferralAgent.id == agent_id))
+    result = db.execute(select(ReferralAgent).where(ReferralAgent.id == agent_id))
     agent = result.scalar_one_or_none()
     if not agent:
         from fastapi import HTTPException
@@ -393,7 +393,7 @@ async def list_agent_leads(
     count_res = await db.execute(
         select(func.count()).where(ReferralLead.agent_id == agent_id)
     )
-    result = await db.execute(
+    result = db.execute(
         select(ReferralLead)
         .where(ReferralLead.agent_id == agent_id)
         .order_by(ReferralLead.submitted_at.desc())
@@ -437,7 +437,7 @@ async def list_commissions(
     if agent_id:
         query = query.where(Commission.agent_id == agent_id)
     count_res = await db.execute(select(func.count()).select_from(query.subquery()))
-    result = await db.execute(
+    result = db.execute(
         query.order_by(Commission.created_at.desc())
         .offset((page - 1) * size).limit(size)
     )

@@ -89,7 +89,7 @@ async def get_current_user(
     if not user_id:
         raise HTTPException(status_code=401, detail="Token payload invalid.")
 
-    result = await db.execute(
+    result = db.execute(
         select(User)
         .where(User.id == uuid.UUID(user_id), User.deleted_at.is_(None))
         .options(

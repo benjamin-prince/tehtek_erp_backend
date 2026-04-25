@@ -64,8 +64,8 @@ async def log_action(
 class AuthController:
 
     @staticmethod
-    async def login(db: AsyncSession, payload: LoginRequest, ip: str) -> dict:
-        result = await db.execute(
+    def login(db: AsyncSession, payload: LoginRequest, ip: str) -> dict:
+        result = db.execute(
             select(User)
             .where(User.email == payload.email, User.deleted_at.is_(None))
             .options(
@@ -119,7 +119,7 @@ class AuthController:
         if payload.get("type") != "refresh":
             raise HTTPException(status_code=401, detail="Invalid token type.")
 
-        result = await db.execute(
+        result = db.execute(
             select(User).where(User.id == uuid.UUID(payload["sub"]), User.deleted_at.is_(None))
         )
         user = result.scalar_one_or_none()
@@ -135,7 +135,7 @@ class AuthController:
 
     @staticmethod
     async def request_password_reset(db: AsyncSession, email: str) -> bool:
-        result = await db.execute(select(User).where(User.email == email))
+        result = db.execute(select(User).where(User.email == email))
         user = result.scalar_one_or_none()
         # Always return True to prevent email enumeration
         if not user:
@@ -149,7 +149,7 @@ class AuthController:
 
     @staticmethod
     async def confirm_password_reset(db: AsyncSession, token: str, new_password: str) -> bool:
-        result = await db.execute(
+        result = db.execute(
             select(User).where(
                 User.reset_token == token,
                 User.reset_token_expiry > datetime.utcnow(),
@@ -211,7 +211,7 @@ class UserController:
 
     @staticmethod
     async def get_user(db: AsyncSession, user_id: uuid.UUID) -> User:
-        result = await db.execute(
+        result = db.execute(
             select(User)
             .where(User.id == user_id, User.deleted_at.is_(None))
             .options(
@@ -258,7 +258,7 @@ class UserController:
             .limit(size)
             .order_by(User.created_at.desc())
         )
-        result = await db.execute(query)
+        result = db.execute(query)
         return result.scalars().all(), total
 
     @staticmethod
@@ -365,7 +365,7 @@ class ReferralController:
         payload: ReferralLeadUpdate,
         actor: User,
     ) -> ReferralLead:
-        result = await db.execute(select(ReferralLead).where(ReferralLead.id == lead_id))
+        result = db.execute(select(ReferralLead).where(ReferralLead.id == lead_id))
         lead = result.scalar_one_or_none()
         if not lead:
             raise HTTPException(status_code=404, detail="Lead not found.")
@@ -384,7 +384,7 @@ class ReferralController:
         db: AsyncSession,
         lead: ReferralLead,
     ):
-        result = await db.execute(
+        result = db.execute(
             select(ReferralAgent).where(ReferralAgent.id == lead.agent_id)
         )
         agent = result.scalar_one_or_none()
@@ -419,7 +419,7 @@ class ReferralController:
         payload: CommissionApproveRequest,
         actor: User,
     ) -> Commission:
-        result = await db.execute(
+        result = db.execute(
             select(Commission).where(Commission.id == commission_id)
         )
         commission = result.scalar_one_or_none()
@@ -443,7 +443,7 @@ class ReferralController:
         payload: CommissionPayRequest,
         actor: User,
     ) -> Commission:
-        result = await db.execute(
+        result = db.execute(
             select(Commission)
             .where(Commission.id == commission_id)
             .options(selectinload(Commission.agent))
@@ -467,7 +467,7 @@ class ReferralController:
 
     @staticmethod
     async def get_commission_summary(db: AsyncSession, agent_id: uuid.UUID) -> dict:
-        result = await db.execute(
+        result = db.execute(
             select(ReferralAgent).where(ReferralAgent.id == agent_id)
         )
         agent = result.scalar_one_or_none()
