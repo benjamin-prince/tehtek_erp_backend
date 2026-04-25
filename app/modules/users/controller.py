@@ -205,6 +205,19 @@ class UserController:
         db.refresh(user)
 
         return user
+    
+    @staticmethod
+    def update_user(db: Session, user_id: uuid.UUID, payload: UserUpdate, actor: User) -> User:
+        user = UserController.get_user(db, user_id)
+
+        update_data = payload.model_dump(exclude_unset=True)
+        for field, value in update_data.items():
+            setattr(user, field, value)
+
+        log_action(db, user.id, "user_updated", actor_id=actor.id)
+        db.commit()
+        db.refresh(user)
+        return user
 
 
 class ReferralController:
